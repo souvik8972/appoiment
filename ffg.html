@@ -3,34 +3,14 @@
 <head>
     <title>Booking Appointment</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        #userList {
-            margin-top: 20px;
-        }
+        /* Your CSS styles here */
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Booking Appointment</h1>
         <form id="bookingForm">
-            <label for="name">Name:</label>
-            <input type="text" id="name" required><br><br>
-
-            <label for="email">Email:</label>
-            <input type="email" id="email" required><br><br>
-
-            <label for="date">Date:</label>
-            <input type="date" id="date" required><br><br>
-
+            <!-- Your form fields here -->
             <button type="submit">Book Appointment</button>
         </form>
     </div>
@@ -41,39 +21,119 @@
     </div>
 
     <script>
-        const bookingForm = document.getElementById('bookingForm');
-        const userList = document.getElementById('users');
+        document.addEventListener("DOMContentLoaded", function() {
+            const crudApiUrl = 'https://crudcrud.com/api/58d3da618134487b9c1eb1996b82e718';
+            const bookingForm = document.getElementById('bookingForm');
+            const userList = document.getElementById('users');
+            let editingUserId = null;
 
-        // Load saved users from local storage
-        function loadUsers() {
-            const users = JSON.parse(localStorage.getItem('users')) || [];
-            userList.innerHTML = users.map(user => `<li>Name: ${user.name}, Email: ${user.email}, Date: ${user.date}</li>`).join('');
-        }
+            bookingForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const date = document.getElementById('date').value;
 
-        // Save user to local storage
-        function saveUser(user) {
-            const users = JSON.parse(localStorage.getItem('users')) || [];
-            users.push(user);
-            localStorage.setItem('users', JSON.stringify(users));
+                if (editingUserId) {
+                    // Edit existing user
+                    fetch(`${crudApiUrl}/users/${editingUserId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name, email, date })
+                    })
+                    .then(response => response.json())
+                    .then(() => {
+                        editingUserId = null;
+                        bookingForm.reset();
+                        loadUsers();
+                    })
+                    .catch(error => {
+                        console.error('Error editing user details:', error);
+                    });
+                } else {
+                    // Create new user
+                    fetch(`${crudApiUrl}/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name, email, date })
+                    })
+                    .then(response => response.json())
+                    .then(() => {
+                        bookingForm.reset();
+                        loadUsers();
+                    })
+                    .catch(error => {
+                        console.error('Error creating user:', error);
+                    });
+                }
+            });
+
+            function loadUsers() {
+                fetch(`${crudApiUrl}/users`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displayUserDetails(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching user details:', error);
+                    });
+            }
+
+            function displayUserDetails(users) {
+                userList.innerHTML = users.map(user => `
+                    <li>
+                        Name: ${user.name}, Email: ${user.email}, Date: ${user.date}
+                        <span class="edit-icon" data-id="${user._id}">&#x270E;</span>
+                        <span class="delete-icon" data-id="${user._id}">&#x274C;</span>
+                    </li>`).join('');
+
+                const editIcons = document.querySelectorAll('.edit-icon');
+                editIcons.forEach(icon => {
+                    icon.addEventListener('click', editUser);
+                });
+
+                const deleteIcons = document.querySelectorAll('.delete-icon');
+                deleteIcons.forEach(icon => {
+                    icon.addEventListener('click', deleteUser);
+                });
+            }
+
+            function editUser(event) {
+                const userId = event.target.getAttribute('data-id');
+
+                fetch(`${crudApiUrl}/users/${userId}`)
+                    .then(response => response.json())
+                    .then(user => {
+                        document.getElementById('name').value = user.name;
+                        document.getElementById('email').value = user.email;
+                        document.getElementById('date').value = user.date;
+                        editingUserId = userId;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching user details:', error);
+                    });
+            }
+
+            function deleteUser(event) {
+                const userId = event.target.getAttribute('data-id');
+
+                fetch(`${crudApiUrl}/users/${userId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loadUsers();
+                })
+                .catch(error => {
+                    console.error('Error deleting user:', error);
+                });
+            }
+
             loadUsers();
-        }
-
-        // Event listener for form submission
-        bookingForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const date = document.getElementById('date').value;
-
-            const user = { name, email, date };
-            saveUser(user);
-
-            // Clear form fields
-            bookingForm.reset();
         });
-
-        // Initial load of saved users
-        loadUsers();
     </script>
 </body>
 </html>
