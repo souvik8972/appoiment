@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #itemInput, #priceInput {
+            margin-bottom: 10px;
+        }
+        #itemList {
+            list-style: none;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Item List</h1>
+    <label for="itemInput">Item: </label>
+    <input type="text" id="itemInput">
+    <label for="priceInput">Price: </label>
+    <input type="number" id="priceInput">
+    <button id="addItemButton">Add Item</button>
+    
+    <h2>Items:</h2>
+    <ul id="itemList"></ul>
+    
+    <h3>Total Price: Rs.<span id="totalPrice">0.00</span></h3>
+
+    <!-- Include Axios library -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const itemInput = document.getElementById("itemInput");
+        const priceInput = document.getElementById("priceInput");
+        const addItemButton = document.getElementById("addItemButton");
+        const itemList = document.getElementById("itemList");
+        const totalPriceSpan = document.getElementById("totalPrice");
+        
+        let total = 0;
+
+        addItemButton.addEventListener("click", () => {
+            const item = itemInput.value;
+            const price = parseFloat(priceInput.value);
+
+            if (item && !isNaN(price)) {
+                // Create the data object to send in the POST request
+                const newItem = {
+                    item: item,
+                    price: price
+                };
+
+                // Make a POST request using Axios
+                axios.post('https://crudcrud.com/api/2de23e16145747fbb526f1c5b651f955/items', newItem)
+                    .then(response => {
+                        const addedItem = response.data;
+                        const listItem = document.createElement("li");
+                        listItem.textContent = `${addedItem.item}: Rs.${addedItem.price.toFixed(2)}`;
+
+                        const deleteButton = document.createElement("button");
+                        deleteButton.textContent = "Delete";
+                        deleteButton.addEventListener("click", () => {
+                            total -= addedItem.price;
+                            totalPriceSpan.textContent = total.toFixed(2);
+                            itemList.removeChild(listItem);
+                        });
+
+                        listItem.appendChild(deleteButton);
+                        itemList.appendChild(listItem);
+
+                        total += addedItem.price;
+                        totalPriceSpan.textContent = total.toFixed(2);
+
+                        // Clear input fields
+                        itemInput.value = "";
+                        priceInput.value = "";
+                    })
+                    .catch(error => {
+                        console.error("Error adding item:", error);
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
